@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, Pressable } from "react-native";
-import { Leaf, Zap, LogIn, UserPlus, ShieldCheck } from "lucide-react-native";
-import "../../global.css"
+import { View, Text, TextInput, Pressable, Image, ImageSourcePropType } from "react-native";
+import { Leaf, Zap, LogIn, UserPlus, ShieldCheck, Eye, EyeOff } from "lucide-react-native";
+import "../../global.css";
 
 export default function Auth() {
     const [tab, setTab] = useState<"login" | "register">("login");
@@ -48,10 +48,10 @@ export default function Auth() {
                     </Text>
                 </View>
 
-                {/* Alt auth buttons (placeholders) */}
+                {/* Alt auth buttons with images */}
                 <View className="flex-row gap-3">
-                    <AuthAltButton label="Apple" />
-                    <AuthAltButton label="Google" />
+                    <AuthAltButton label="Apple" imageSource={require("../../assets/images/apple.png")} />
+                    <AuthAltButton label="Google" imageSource={require("../../assets/images/google.png")} />
                 </View>
             </View>
 
@@ -76,8 +76,7 @@ function TabButton({
     return (
         <Pressable
             onPress={onPress}
-            className={`flex-1 py-2 rounded-xl items-center ${active ? "bg-lime-400" : ""
-                }`}
+            className={`flex-1 py-2 rounded-xl items-center ${active ? "bg-lime-400" : ""}`}
         >
             <Text className={active ? "text-black font-semibold" : "text-white/70"}>{label}</Text>
         </Pressable>
@@ -108,7 +107,7 @@ function LoginForm() {
 function RegisterForm() {
     return (
         <View>
-            <FormField label="Jmeno" placeholder="Adam novak" />
+            <FormField label="Jmeno" placeholder="Adam Novak" />
             <FormField label="Email" placeholder="email@seznam.cz" keyboardType="email-address" />
             <FormField label="Heslo" placeholder="Alespoň 8 Znaků" secureTextEntry />
             <Pressable className="mt-3 h-11 rounded-2xl bg-lime-400 items-center justify-center active:opacity-80">
@@ -132,24 +131,53 @@ function FormField({
     keyboardType?: any;
     secureTextEntry?: boolean;
 }) {
+    const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+    const toggleVisibility = () => setIsPasswordVisible((v) => !v);
+
     return (
         <View className="mb-3">
             <Text className="text-white/70 text-sm mb-2">{label}</Text>
-            <TextInput
-                placeholder={placeholder}
-                placeholderTextColor="rgba(255,255,255,0.4)"
-                keyboardType={keyboardType}
-                secureTextEntry={secureTextEntry}
-                className="h-11 rounded-2xl px-4 bg-white/5 text-white border border-white/10"
-            />
+            <View className="flex-row items-center h-11 rounded-2xl px-4 bg-white/5 border border-white/10">
+                <TextInput
+                    placeholder={placeholder}
+                    placeholderTextColor="rgba(255,255,255,0.4)"
+                    keyboardType={keyboardType}
+                    secureTextEntry={secureTextEntry && !isPasswordVisible}
+                    className="flex-1 text-white"
+                />
+                {secureTextEntry && (
+                    <Pressable onPress={toggleVisibility} className="pl-2" accessibilityRole="button">
+                        {isPasswordVisible ? <EyeOff size={20} color="white" /> : <Eye size={20} color="white" />}
+                    </Pressable>
+                )}
+            </View>
         </View>
     );
 }
 
-function AuthAltButton({ label }: { label: string }) {
+function AuthAltButton({
+    label,
+    imageSource,
+}: {
+    label: string;
+    imageSource?: ImageSourcePropType; // local require(...) or { uri: string }
+}) {
     return (
-        <Pressable className="flex-1 h-11 rounded-2xl bg-white items-center justify-center border border-white/20 active:opacity-80">
-            <Text className="text-black/90 font-medium">{label}</Text>
+        <Pressable
+            className="flex-1 h-11 rounded-2xl bg-white items-center justify-center border border-white/20 active:opacity-80"
+            accessibilityRole="button"
+            accessibilityLabel={label}
+        >
+            <View className="flex-row items-center">
+                {imageSource ? (
+                    <Image
+                        source={imageSource}
+                        style={{ width: 18, height: 18, marginRight: 8 }}
+                        resizeMode="contain"
+                    />
+                ) : null}
+                <Text className="text-black/90 font-medium">{label}</Text>
+            </View>
         </Pressable>
     );
 }

@@ -1,7 +1,8 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, Pressable, Image, ImageSourcePropType } from "react-native";
+import { View, Text, TextInput, Pressable, Image, ImageSourcePropType, ActivityIndicator, Alert } from "react-native";
 import { Leaf, Zap, LogIn, UserPlus, ShieldCheck, Eye, EyeOff } from "lucide-react-native";
 import "../../global.css";
+import { login, register } from "@/services/auth";
 
 export default function Auth() {
     const [tab, setTab] = useState<"login" | "register">("login");
@@ -84,37 +85,98 @@ function TabButton({
 }
 
 function LoginForm() {
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [loading, setLoading] = useState(false);
+
+    const onLogin = async () => {
+        try {
+            if (!email.trim() || !password) {
+                Alert.alert("Chyba", "Vyplňte email i heslo.");
+                return;
+            }
+            setLoading(true);
+            const data = await login(email.trim(), password);
+            // data: { token, token_type, expires_in, status, message }
+            Alert.alert("Přihlášení", data?.message ?? "Úspěšně přihlášen.");
+            // TODO: navigate()
+        } catch (e: any) {
+            const msg = e?.response?.data?.message || e?.response?.data?.error || e.message;
+            Alert.alert("Chyba přihlášení", msg);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <View>
-            <FormField label="Email" placeholder="email@seznam.cz" keyboardType="email-address" />
-            <FormField label="Heslo" placeholder="••••••••" secureTextEntry />
+            <FormField label="Email" placeholder="email@seznam.cz" keyboardType="email-address" value={email} onChangeText={setEmail} />
+            <FormField label="Heslo" placeholder="••••••••" secureTextEntry value={password} onChangeText={setPassword} />
             <View className="flex-row items-center justify-between mt-2">
-                <Text className="text-white/60 text-xs">Zapamtovat si mě</Text>
-                <Pressable>
-                    <Text className="text-lime-300 text-xs">Zapomněl Heslo?</Text>
-                </Pressable>
+                <Text className="text-white/60 text-xs">Zapamatovat si mě</Text>
+                <Pressable><Text className="text-lime-300 text-xs">Zapomněl heslo?</Text></Pressable>
             </View>
-            <Pressable className="mt-3 h-11 rounded-2xl bg-lime-400 items-center justify-center active:opacity-80">
-                <View className="flex-row items-center">
-                    <LogIn size={16} color="black" />
-                    <Text className="text-black font-semibold ml-2">Příhlásit se</Text>
-                </View>
+
+            <Pressable
+                onPress={onLogin}
+                disabled={loading}
+                className={`mt-3 h-11 rounded-2xl items-center justify-center active:opacity-80 ${loading ? "bg-white/20" : "bg-lime-400"}`}
+            >
+                {loading ? (
+                    <ActivityIndicator />
+                ) : (
+                    <View className="flex-row items-center">
+                        <LogIn size={16} color="black" />
+                        <Text className="text-black font-semibold ml-2">Přihlásit se</Text>
+                    </View>
+                )}
             </Pressable>
         </View>
     );
 }
-
 function RegisterForm() {
+    const [name, setName] = useState("");
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [loading, setLoading] = useState(false);
+
+    const onRegister = async () => {
+        try {
+            if (!name.trim() || !email.trim() || !password) {
+                Alert.alert("Chyba", "Vyplňte jméno, email i heslo.");
+                return;
+            }
+            setLoading(true);
+            const data = await register(name.trim(), email.trim(), password);
+            // očekáváš { status: "ok", message: "...", data: {...} }
+            Alert.alert("Registrace", data?.message ?? "Účet vytvořen. Nyní se přihlaste.");
+        } catch (e: any) {
+            const msg = e?.response?.data?.message || e?.response?.data?.error || e.message;
+            Alert.alert("Chyba registrace", msg);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <View>
-            <FormField label="Jmeno" placeholder="Adam Novak" />
-            <FormField label="Email" placeholder="email@seznam.cz" keyboardType="email-address" />
-            <FormField label="Heslo" placeholder="Alespoň 8 Znaků" secureTextEntry />
-            <Pressable className="mt-3 h-11 rounded-2xl bg-lime-400 items-center justify-center active:opacity-80">
-                <View className="flex-row items-center">
-                    <UserPlus size={16} color="black" />
-                    <Text className="text-black font-semibold ml-2">Registrovat</Text>
-                </View>
+            <FormField label="Jméno" placeholder="Adam Novak" value={name} onChangeText={setName} />
+            <FormField label="Email" placeholder="email@seznam.cz" keyboardType="email-address" value={email} onChangeText={setEmail} />
+            <FormField label="Heslo" placeholder="Alespoň 8 znaků" secureTextEntry value={password} onChangeText={setPassword} />
+
+            <Pressable
+                onPress={onRegister}
+                disabled={loading}
+                className={`mt-3 h-11 rounded-2xl items-center justify-center active:opacity-80 ${loading ? "bg-white/20" : "bg-lime-400"}`}
+            >
+                {loading ? (
+                    <ActivityIndicator />
+                ) : (
+                    <View className="flex-row items-center">
+                        <UserPlus size={16} color="black" />
+                        <Text className="text-black font-semibold ml-2">Registrovat</Text>
+                    </View>
+                )}
             </Pressable>
         </View>
     );
@@ -125,11 +187,15 @@ function FormField({
     placeholder,
     keyboardType,
     secureTextEntry,
+    value,
+    onChangeText,
 }: {
     label: string;
     placeholder?: string;
     keyboardType?: any;
     secureTextEntry?: boolean;
+    value: string;
+    onChangeText: (t: string) => void;
 }) {
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
     const toggleVisibility = () => setIsPasswordVisible((v) => !v);
@@ -139,10 +205,13 @@ function FormField({
             <Text className="text-white/70 text-sm mb-2">{label}</Text>
             <View className="flex-row items-center h-11 rounded-2xl px-4 bg-white/5 border border-white/10">
                 <TextInput
+                    value={value}
+                    onChangeText={onChangeText}
                     placeholder={placeholder}
                     placeholderTextColor="rgba(255,255,255,0.4)"
                     keyboardType={keyboardType}
                     secureTextEntry={secureTextEntry && !isPasswordVisible}
+                    autoCapitalize="none"
                     className="flex-1 text-white"
                 />
                 {secureTextEntry && (
@@ -155,12 +224,13 @@ function FormField({
     );
 }
 
+
 function AuthAltButton({
     label,
     imageSource,
 }: {
     label: string;
-    imageSource?: ImageSourcePropType; // local require(...) or { uri: string }
+    imageSource?: ImageSourcePropType;
 }) {
     return (
         <Pressable

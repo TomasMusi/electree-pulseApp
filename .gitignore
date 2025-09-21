@@ -6,6 +6,8 @@ node_modules/
 dist/
 web-build/
 expo-env.d.ts
+.vscode/
+.cursor/
 
 # Native builds
 /ios

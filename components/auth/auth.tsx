@@ -1,8 +1,12 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, Pressable, Image, ImageSourcePropType, ActivityIndicator, Alert } from "react-native";
 import { Leaf, Zap, LogIn, UserPlus, ShieldCheck, Eye, EyeOff } from "lucide-react-native";
+import { useNavigation } from "@react-navigation/native";
 import "../../global.css";
+import * as SecureStore from "expo-secure-store";
 import { login, register } from "@/services/auth";
+
+
 
 export default function Auth() {
     const [tab, setTab] = useState<"login" | "register">("login");
@@ -84,10 +88,12 @@ function TabButton({
     );
 }
 
+
 function LoginForm() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
+    const navigation = useNavigation();
 
     const onLogin = async () => {
         try {
@@ -98,8 +104,15 @@ function LoginForm() {
             setLoading(true);
             const data = await login(email.trim(), password);
             // data: { token, token_type, expires_in, status, message }
+            await SecureStore.setItemAsync("auth_token", data.token);
             Alert.alert("Přihlášení", data?.message ?? "Úspěšně přihlášen.");
-            // TODO: navigate()
+
+            // Ujisteni, ze Menu se stane Rootem (zadne vraceni na Auth!)
+            navigation.reset({
+                index: 0,
+                routes: [{ name: "Menu" as never }],
+            });
+
         } catch (e: any) {
             const msg = e?.response?.data?.message || e?.response?.data?.error || e.message;
             Alert.alert("Chyba přihlášení", msg);

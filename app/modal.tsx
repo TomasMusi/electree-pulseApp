@@ -1,12 +1,10 @@
-import { View } from "react-native";
-import "../global.css"
-import Auth from "@/components/auth/auth";
+// Module.tsx
+import React from "react";
+import "../global.css";
+
+// Application navigator.
+import { AppNavigator } from "@/components/menu/menu";
 
 export default function ModalScreen() {
-  return (
-    <View style={{ flex: 1 }}>
-      <Auth />
-    </View>
-  );
+  return <AppNavigator />;
 }
-
